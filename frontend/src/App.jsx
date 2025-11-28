@@ -73,7 +73,7 @@ function App() {
                             <div className="flex justify-between items-center mb-4">
                                 <h2 className="text-xl font-semibold text-slate-300">Latest Analysis</h2>
                                 <span className="text-sm text-slate-500">
-                                    {analysis.timestamp ? new Date(analysis.timestamp).toLocaleString() : 'Never'}
+                                    {analysis.timestamp ? new Date(analysis.timestamp).toLocaleString('en-US', { timeZone: 'America/New_York', timeZoneName: 'short' }) : 'Never'}
                                 </span>
                             </div>
                             <div className="prose prose-invert max-w-none text-lg leading-relaxed whitespace-pre-line">
@@ -94,6 +94,13 @@ function App() {
                                 <div className="bg-slate-800 p-4 rounded-lg border border-slate-700">
                                     <h3 className="text-sm font-medium text-slate-400 mb-1">Put Volume</h3>
                                     <p className="text-2xl font-bold text-red-400">{analysis.data.put_volume?.toLocaleString() || '0'}</p>
+                                </div>
+                                <div className="bg-slate-800 p-4 rounded-lg border border-slate-700">
+                                    <h3 className="text-sm font-medium text-slate-400 mb-1">VIX Index</h3>
+                                    <div className="flex items-baseline gap-2">
+                                        <p className="text-2xl font-bold text-purple-400">{analysis.data.vix_current || 'N/A'}</p>
+                                        <span className="text-sm text-slate-500">{analysis.data.vix_trend}</span>
+                                    </div>
                                 </div>
                             </div>
                         )}

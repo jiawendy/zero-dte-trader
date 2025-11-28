@@ -21,6 +21,8 @@ def analyze_market(market_data):
     Analyze the following market data for {market_data.get('symbol')} and provide a trading suggestion.
     
     Current Price: {market_data.get('spot_price')}
+    VIX Level: {market_data.get('vix_current')}
+    VIX Trend (1hr): {market_data.get('vix_trend')}
     
     Data Summary:
     - Call Volume: {market_data.get('call_volume')}

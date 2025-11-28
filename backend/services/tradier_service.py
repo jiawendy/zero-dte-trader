@@ -29,6 +29,16 @@ def get_spot_price(symbol: str) -> float:
     
     raise ValueError("Could not determine price")
 
+def get_quote(symbol: str):
+    url = "https://api.tradier.com/v1/markets/quotes"
+    resp = requests.get(url, headers=HEADERS, params={"symbols": symbol})
+    resp.raise_for_status()
+    data = resp.json()
+    quote = data.get("quotes", {}).get("quote")
+    if isinstance(quote, list):
+        return quote[0]
+    return quote
+
 def fetch_option_chain(symbol: str, expiration: str):
     url = "https://api.tradier.com/v1/markets/options/chains"
     params = {"symbol": symbol, "expiration": expiration, "greeks": "true"}
@@ -46,10 +56,27 @@ def fetch_option_chain(symbol: str, expiration: str):
         
     return option_list
 
-def get_historical_candles(symbol: str, interval: str = "5min"):
-    # Simple implementation for now, fetching today's candles
-    url = "https://api.tradier.com/v1/markets/timesales"
-    params = {"symbol": symbol, "interval": interval}
+def get_historical_candles(symbol: str, interval: str = "1min", start_date: str = None):
+    url = "https://api.tradier.com/v1/markets/candles"
+    params = {
+        "symbol": symbol, 
+        "interval": interval,
+        "session_filter": "all"
+    }
+    if start_date:
+        params["start"] = start_date
+        
     resp = requests.get(url, headers=HEADERS, params=params)
     resp.raise_for_status()
-    return resp.json()
+    data = resp.json()
+    
+    # Tradier structure: {'history': {'day': [...]}} or {'candles': ...} depending on endpoint
+    # markets/candles returns {'candles': {'candle': [...]}}
+    
+    candles = data.get("candles", {}).get("candle", [])
+    if not candles:
+        return []
+    if isinstance(candles, dict): # Single candle case
+        return [candles]
+        
+    return candles
