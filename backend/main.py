@@ -31,6 +31,41 @@ def trigger_analysis():
     job_analyze_market()
     return {"message": "Analysis triggered", "result": get_latest_analysis_data()}
 
+@app.post("/api/share")
+def share_analysis():
+    from services.google_docs_service import append_or_create_analysis_doc
+    import datetime
+    
+    data = get_latest_analysis_data()
+    if not data or not data.get("text"):
+        return {"error": "No analysis available to share"}
+        
+    try:
+        # Title is now just the date
+        today_str = datetime.date.today().strftime("%Y-%m-%d")
+        title = f"0DTE Analysis - {today_str}"
+        
+        # Add timestamp to content
+        timestamp = data.get('timestamp', 'Unknown Time')
+        content = f"Analysis Time: {timestamp}\n\n{data.get('text')}"
+        
+        doc_url = append_or_create_analysis_doc(title, content)
+        return {"url": doc_url}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/api/save_local")
+def save_local_analysis():
+    from services.storage_service import save_analysis_to_disk
+    
+    data = get_latest_analysis_data()
+    filepath, error = save_analysis_to_disk(data)
+    
+    if error:
+        return {"error": error}
+        
+    return {"message": f"Saved to {filepath}", "path": filepath}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)

@@ -57,7 +57,8 @@ def fetch_option_chain(symbol: str, expiration: str):
     return option_list
 
 def get_historical_candles(symbol: str, interval: str = "1min", start_date: str = None):
-    url = "https://api.tradier.com/v1/markets/candles"
+    # Use timesales endpoint as it supports intraday intervals reliably for this account
+    url = "https://api.tradier.com/v1/markets/timesales"
     params = {
         "symbol": symbol, 
         "interval": interval,
@@ -70,13 +71,10 @@ def get_historical_candles(symbol: str, interval: str = "1min", start_date: str 
     resp.raise_for_status()
     data = resp.json()
     
-    # Tradier structure: {'history': {'day': [...]}} or {'candles': ...} depending on endpoint
-    # markets/candles returns {'candles': {'candle': [...]}}
+    # Timesales structure: {'series': {'data': [...]}}
+    candles = data.get("series", {}).get("data", [])
     
-    candles = data.get("candles", {}).get("candle", [])
     if not candles:
         return []
-    if isinstance(candles, dict): # Single candle case
-        return [candles]
         
     return candles

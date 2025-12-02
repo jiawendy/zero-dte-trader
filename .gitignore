@@ -7,3 +7,6 @@ node_modules/
 dist/
 .DS_Store
 backend.log
+credentials.json
+token.json
+backend/reports/

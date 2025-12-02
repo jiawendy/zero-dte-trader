@@ -3,7 +3,10 @@ import { useState, useEffect, useRef } from 'react'
 function App() {
     const [analysis, setAnalysis] = useState(null)
     const [voiceEnabled, setVoiceEnabled] = useState(false)
+    const [autoSaveDocs, setAutoSaveDocs] = useState(false)
+    const [autoSaveDisk, setAutoSaveDisk] = useState(false)
     const [lastReadTimestamp, setLastReadTimestamp] = useState(null)
+    const [lastSavedTimestamp, setLastSavedTimestamp] = useState(null)
     const [loading, setLoading] = useState(false)
 
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001'
@@ -37,18 +40,86 @@ function App() {
     }, [])
 
     useEffect(() => {
-        if (voiceEnabled && analysis && analysis.text && analysis.timestamp !== lastReadTimestamp) {
+        if (!analysis || !analysis.timestamp) return
+
+        // Voice Logic
+        if (voiceEnabled && analysis.text && analysis.timestamp !== lastReadTimestamp) {
             const utterance = new SpeechSynthesisUtterance(analysis.text)
             window.speechSynthesis.speak(utterance)
             setLastReadTimestamp(analysis.timestamp)
         }
-    }, [analysis, voiceEnabled, lastReadTimestamp])
+
+        // Auto-Save Logic
+        if (analysis.timestamp !== lastSavedTimestamp) {
+            if (autoSaveDocs) {
+                shareToDocs(true) // Pass true to suppress alerts
+            }
+            if (autoSaveDisk) {
+                saveToDisk(true) // Pass true to suppress alerts
+            }
+            // Only update timestamp if we actually saved something or if we just want to mark this analysis as "seen" for saving purposes?
+            // Actually, if we toggle ON later, we might want to save the current one? 
+            // The user said "every 10 mins". 
+            // Let's update lastSavedTimestamp only if we attempted a save OR if we just want to track "processed".
+            // If I update it here unconditionally, then toggling ON later won't save the *current* stale one, which is probably good.
+            // We only want to auto-save *fresh* incoming data.
+            setLastSavedTimestamp(analysis.timestamp)
+        }
+    }, [analysis, voiceEnabled, autoSaveDocs, autoSaveDisk, lastReadTimestamp, lastSavedTimestamp])
+
+    const shareToDocs = async (silent = false) => {
+        try {
+            const res = await fetch(`${API_URL}/api/share`, { method: 'POST' })
+            const data = await res.json()
+            if (data.url) {
+                if (!silent) window.open(data.url, '_blank')
+                console.log("Shared to docs:", data.url)
+            } else if (data.error) {
+                console.error("Error sharing:", data.error)
+                if (!silent) alert(`Error sharing: ${data.error}`)
+            }
+        } catch (err) {
+            console.error("Failed to share", err)
+            if (!silent) alert("Failed to share to Google Docs")
+        }
+    }
+
+    const saveToDisk = async (silent = false) => {
+        try {
+            const res = await fetch(`${API_URL}/api/save_local`, { method: 'POST' })
+            const data = await res.json()
+            if (data.path) {
+                console.log("Saved to disk:", data.path)
+                if (!silent) alert(`Saved to: ${data.path}`)
+            } else if (data.error) {
+                console.error("Error saving:", data.error)
+                if (!silent) alert(`Error saving: ${data.error}`)
+            }
+        } catch (err) {
+            console.error("Failed to save", err)
+            if (!silent) alert("Failed to save to disk")
+        }
+    }
 
     return (
         <div className="min-h-screen p-8 bg-slate-900 text-slate-100 font-sans">
             <header className="mb-8 flex justify-between items-center">
                 <h1 className="text-3xl font-bold text-blue-400">0DTE Trader Assistant</h1>
                 <div className="flex items-center gap-4">
+                    <button
+                        onClick={() => setAutoSaveDisk(!autoSaveDisk)}
+                        className={`px-4 py-2 rounded-full font-semibold transition-colors ${autoSaveDisk ? 'bg-purple-600 hover:bg-purple-500' : 'bg-slate-600 hover:bg-slate-500'
+                            }`}
+                    >
+                        {autoSaveDisk ? 'Auto-Save Disk: ON' : 'Auto-Save Disk: OFF'}
+                    </button>
+                    <button
+                        onClick={() => setAutoSaveDocs(!autoSaveDocs)}
+                        className={`px-4 py-2 rounded-full font-semibold transition-colors ${autoSaveDocs ? 'bg-yellow-600 hover:bg-yellow-500' : 'bg-slate-600 hover:bg-slate-500'
+                            }`}
+                    >
+                        {autoSaveDocs ? 'Auto-Save Docs: ON' : 'Auto-Save Docs: OFF'}
+                    </button>
                     <button
                         onClick={() => setVoiceEnabled(!voiceEnabled)}
                         className={`px-4 py-2 rounded-full font-semibold transition-colors ${voiceEnabled ? 'bg-green-600 hover:bg-green-500' : 'bg-slate-600 hover:bg-slate-500'
@@ -59,7 +130,7 @@ function App() {
                     <button
                         onClick={triggerAnalysis}
                         disabled={loading}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg font-semibold disabled:opacity-50"
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-full font-semibold disabled:opacity-50 transition-colors"
                     >
                         {loading ? 'Analyzing...' : 'Refresh Now'}
                     </button>
