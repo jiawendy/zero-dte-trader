@@ -35,6 +35,7 @@ def trigger_analysis():
 def share_analysis():
     from services.google_docs_service import append_or_create_analysis_doc
     import datetime
+    from zoneinfo import ZoneInfo
     
     data = get_latest_analysis_data()
     if not data or not data.get("text"):
@@ -46,8 +47,22 @@ def share_analysis():
         title = f"0DTE Analysis - {today_str}"
         
         # Add timestamp to content
-        timestamp = data.get('timestamp', 'Unknown Time')
-        content = f"Analysis Time: {timestamp}\n\n{data.get('text')}"
+        timestamp_str = data.get('timestamp')
+        formatted_time = "Unknown Time"
+        
+        if timestamp_str:
+            try:
+                # Parse ISO format
+                dt = datetime.datetime.fromisoformat(timestamp_str)
+                # Convert to Eastern Time
+                et_dt = dt.astimezone(ZoneInfo("America/New_York"))
+                # Format: Dec 02, 2025 at 03:59 PM ET
+                formatted_time = et_dt.strftime("%b %d, %Y at %I:%M %p ET")
+            except Exception as e:
+                print(f"Error formatting time: {e}")
+                formatted_time = timestamp_str
+
+        content = f"Analysis Time: {formatted_time}\n\n{data.get('text')}"
         
         doc_url = append_or_create_analysis_doc(title, content)
         return {"url": doc_url}

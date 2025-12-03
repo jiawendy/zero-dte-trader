@@ -42,7 +42,8 @@ def analyze_market(market_data):
     1. Market Sentiment (Bullish/Bearish/Neutral)
     2. Predicted Closing Price Range
     3. Predicted Specific Closing Price Target (within 10 points)
-    4. Suggested Strategy (e.g., Iron Condor, Long Call, etc.)
+    4. Suggested Strategy (e.g., Iron Condor, Butterfly, Diagonal, Calendar, Ratio Spread, Long Call/Put, etc.)
+       - Choose the most appropriate structure based on volatility (IV Rank/Skew) and trend.
     5. Recommended Exit Criteria:
        - Profit Target (e.g., 20% or specific price)
        - Stop Loss (e.g., -10% or specific price)
