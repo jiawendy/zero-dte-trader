@@ -23,8 +23,21 @@ def save_analysis_to_disk(data):
         
         # Open in append mode
         with open(filepath, "a") as f:
+            # Format timestamp
+            timestamp_str = data.get('timestamp')
+            formatted_time = timestamp_str
+            try:
+                import datetime
+                from zoneinfo import ZoneInfo
+                if timestamp_str:
+                    dt = datetime.datetime.fromisoformat(timestamp_str)
+                    et_dt = dt.astimezone(ZoneInfo("America/New_York"))
+                    formatted_time = et_dt.strftime("%b %d, %Y at %I:%M %p ET")
+            except Exception as e:
+                print(f"Error formatting time for local save: {e}")
+
             f.write(f"\n{'='*40}\n")
-            f.write(f"TIME: {data.get('timestamp')}\n")
+            f.write(f"TIME: {formatted_time}\n")
             f.write(f"{'='*40}\n\n")
             f.write(data.get("text"))
             
