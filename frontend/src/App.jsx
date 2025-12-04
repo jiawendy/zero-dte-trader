@@ -5,11 +5,24 @@ function App() {
     const [voiceEnabled, setVoiceEnabled] = useState(false)
     const [autoSaveDocs, setAutoSaveDocs] = useState(false)
     const [autoSaveDisk, setAutoSaveDisk] = useState(false)
+    const [isPaused, setIsPaused] = useState(false)
     const [lastReadTimestamp, setLastReadTimestamp] = useState(null)
     const [lastSavedTimestamp, setLastSavedTimestamp] = useState(null)
     const [loading, setLoading] = useState(false)
 
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001'
+
+    const fetchStatus = async () => {
+        try {
+            const res = await fetch(`${API_URL}/api/status`)
+            const data = await res.json()
+            if (data.paused !== undefined) {
+                setIsPaused(data.paused)
+            }
+        } catch (err) {
+            console.error("Failed to fetch status", err)
+        }
+    }
 
     const fetchAnalysis = async () => {
         try {
@@ -34,8 +47,12 @@ function App() {
     }
 
     useEffect(() => {
+        fetchStatus()
         fetchAnalysis()
-        const interval = setInterval(fetchAnalysis, 60000) // Poll every minute
+        const interval = setInterval(() => {
+            fetchAnalysis()
+            fetchStatus()
+        }, 60000) // Poll every minute
         return () => clearInterval(interval)
     }, [])
 
@@ -101,16 +118,15 @@ function App() {
         }
     }
 
-    const stopServer = async () => {
-        if (!confirm("Are you sure you want to stop the backend server?")) return
-
+    const togglePause = async () => {
+        const endpoint = isPaused ? 'resume' : 'pause'
         try {
-            await fetch(`${API_URL}/api/shutdown`, { method: 'POST' })
-            alert("Server stopping...")
+            await fetch(`${API_URL}/api/${endpoint}`, { method: 'POST' })
+            setIsPaused(!isPaused)
+            alert(`Analysis ${isPaused ? 'Resumed' : 'Paused'}`)
         } catch (err) {
-            console.error("Failed to stop server", err)
-            // It might fail if server dies quickly, which is expected
-            alert("Server stop signal sent.")
+            console.error("Failed to toggle pause", err)
+            alert("Failed to toggle pause state")
         }
     }
 
@@ -120,10 +136,11 @@ function App() {
                 <h1 className="text-3xl font-bold text-blue-400">0DTE Trader Assistant</h1>
                 <div className="flex items-center gap-4">
                     <button
-                        onClick={stopServer}
-                        className="px-4 py-2 bg-red-600 hover:bg-red-500 rounded-full font-semibold transition-colors"
+                        onClick={togglePause}
+                        className={`px-4 py-2 rounded-full font-semibold transition-colors ${isPaused ? 'bg-green-600 hover:bg-green-500' : 'bg-yellow-600 hover:bg-yellow-500'
+                            }`}
                     >
-                        Stop Server 🛑
+                        {isPaused ? 'Resume Analysis ▶️' : 'Pause Analysis ⏸️'}
                     </button>
                     <button
                         onClick={() => setAutoSaveDisk(!autoSaveDisk)}

@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from services.scheduler import start_scheduler, get_latest_analysis_data, job_analyze_market
+from services.scheduler import start_scheduler, get_latest_analysis_data, job_analyze_market, pause_analysis, resume_analysis, get_scheduler_status
 import contextlib
 
 @contextlib.asynccontextmanager
@@ -20,7 +20,8 @@ app.add_middleware(
 
 @app.get("/api/status")
 def get_status():
-    return {"status": "running"}
+    status = get_scheduler_status()
+    return {"status": "running", "paused": status["paused"]}
 
 @app.get("/api/latest")
 def get_latest_analysis():
@@ -81,19 +82,15 @@ def save_local_analysis():
         
     return {"message": f"Saved to {filepath}", "path": filepath}
 
-@app.post("/api/shutdown")
-def shutdown_server():
-    import os
-    import signal
-    import threading
-    import time
+@app.post("/api/pause")
+def pause_server():
+    pause_analysis()
+    return {"message": "Analysis paused"}
 
-    def kill_server():
-        time.sleep(1) # Give time to return response
-        os.kill(os.getpid(), signal.SIGTERM)
-
-    threading.Thread(target=kill_server).start()
-    return {"message": "Server shutting down..."}
+@app.post("/api/resume")
+def resume_server():
+    resume_analysis()
+    return {"message": "Analysis resumed"}
 
 if __name__ == "__main__":
     import uvicorn

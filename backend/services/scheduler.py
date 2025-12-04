@@ -11,11 +11,15 @@ latest_analysis = {
     "data": {}
 }
 
-last_analysis_time = None
+is_paused = False
 
 def job_analyze_market():
-    global latest_analysis, last_analysis_time
+    global latest_analysis, last_analysis_time, is_paused
     
+    if is_paused:
+        print(f"[{datetime.datetime.now()}] Analysis skipped: Scheduler is PAUSED.")
+        return
+
     now = datetime.datetime.now()
     if last_analysis_time and (now - last_analysis_time).total_seconds() < 60:
         print(f"[{now}] Skipping analysis: Cooldown active (wait 60s)")
@@ -131,3 +135,18 @@ def start_scheduler():
     scheduler.start()
     # Run once immediately for testing
     scheduler.add_job(job_analyze_market, 'date', run_date=datetime.datetime.now() + datetime.timedelta(seconds=5))
+
+def pause_analysis():
+    global is_paused
+    is_paused = True
+    print("Scheduler PAUSED.")
+
+def resume_analysis():
+    global is_paused
+    is_paused = False
+    print("Scheduler RESUMED.")
+    # Optionally trigger one immediately
+    job_analyze_market()
+
+def get_scheduler_status():
+    return {"paused": is_paused}
