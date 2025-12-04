@@ -81,6 +81,20 @@ def save_local_analysis():
         
     return {"message": f"Saved to {filepath}", "path": filepath}
 
+@app.post("/api/shutdown")
+def shutdown_server():
+    import os
+    import signal
+    import threading
+    import time
+
+    def kill_server():
+        time.sleep(1) # Give time to return response
+        os.kill(os.getpid(), signal.SIGTERM)
+
+    threading.Thread(target=kill_server).start()
+    return {"message": "Server shutting down..."}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)

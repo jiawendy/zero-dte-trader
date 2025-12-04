@@ -101,11 +101,30 @@ function App() {
         }
     }
 
+    const stopServer = async () => {
+        if (!confirm("Are you sure you want to stop the backend server?")) return
+
+        try {
+            await fetch(`${API_URL}/api/shutdown`, { method: 'POST' })
+            alert("Server stopping...")
+        } catch (err) {
+            console.error("Failed to stop server", err)
+            // It might fail if server dies quickly, which is expected
+            alert("Server stop signal sent.")
+        }
+    }
+
     return (
         <div className="min-h-screen p-8 bg-slate-900 text-slate-100 font-sans">
             <header className="mb-8 flex justify-between items-center">
                 <h1 className="text-3xl font-bold text-blue-400">0DTE Trader Assistant</h1>
                 <div className="flex items-center gap-4">
+                    <button
+                        onClick={stopServer}
+                        className="px-4 py-2 bg-red-600 hover:bg-red-500 rounded-full font-semibold transition-colors"
+                    >
+                        Stop Server 🛑
+                    </button>
                     <button
                         onClick={() => setAutoSaveDisk(!autoSaveDisk)}
                         className={`px-4 py-2 rounded-full font-semibold transition-colors ${autoSaveDisk ? 'bg-purple-600 hover:bg-purple-500' : 'bg-slate-600 hover:bg-slate-500'
