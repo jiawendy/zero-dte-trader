@@ -12,6 +12,7 @@ latest_analysis = {
 }
 
 is_paused = False
+last_analysis_time = None
 
 def job_analyze_market():
     global latest_analysis, last_analysis_time, is_paused
